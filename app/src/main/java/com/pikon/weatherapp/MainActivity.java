@@ -10,10 +10,17 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.squareup.picasso.Picasso;
+
+import org.w3c.dom.NodeList;
 
 import java.util.List;
 
@@ -24,6 +31,8 @@ import retrofit2.Response;
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvPlace, tvTemperature, tvDescription;
+    private LinearLayout llDetails;
+    private ImageView ivIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
         tvPlace = (TextView) findViewById( R.id.tvPlace );
         tvTemperature = (TextView) findViewById( R.id.tvTemperature );
         tvDescription = (TextView) findViewById( R.id.tvDescription );
+        llDetails = (LinearLayout) findViewById( R.id.llDetails );
+        ivIcon = (ImageView) findViewById( R.id.ivIcon );
 
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE );
         LocationListener locationListener = new LocationListener() {
@@ -40,6 +51,11 @@ public class MainActivity extends AppCompatActivity {
             public void onLocationChanged(@NonNull Location location) {
                 Log.d( "DEBUG", "location changed" );
                 getWeatherData( location.getLatitude(), location.getLongitude() );
+            }
+
+            @Override
+            public void onProviderDisabled(@NonNull String provider) {
+                Toast.makeText(MainActivity.this, "Unable to access user location", Toast.LENGTH_LONG).show();
             }
         };
         if( ContextCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION ) != PackageManager.PERMISSION_GRANTED ) {
@@ -92,5 +108,27 @@ public class MainActivity extends AppCompatActivity {
         tvPlace.setText( place );
         tvTemperature.setText( temp );
         tvDescription.setText( desc );
+        String icon = data.getWeather().get(0).getIcon();
+        // TODO
+        Picasso.Builder builder = new Picasso.Builder(getApplicationContext());
+        builder.listener(new Picasso.Listener() {
+            @Override
+            public void onImageLoadFailed(Picasso picasso, Uri uri, Exception exception) {
+                exception.printStackTrace();
+                Log.e( "DEBUG", exception.getMessage() );
+            }
+        });
+
+        Picasso p = builder.build();
+//        p.setIndicatorsEnabled( true );
+        p.load( "http://openweathermap.org/img/wn/" + icon + "@2x.png" )
+                .error( R.drawable.ic_launcher_background )
+                .into( ivIcon );
+
+        ((TextView)((LinearLayout)llDetails.getChildAt( 0 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getMain().getHumidity() ) + " %" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 1 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getMain().getTempMax() ) + " °C" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 2 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getMain().getTempMin() ) + " °C" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 3 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getMain().getPressure() ) + " hPa" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 4 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getWind().getSpeed() ) + " m/s" );
     }
 }
