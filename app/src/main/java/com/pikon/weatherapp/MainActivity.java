@@ -6,18 +6,22 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.squareup.picasso.Picasso;
 
 import org.w3c.dom.NodeList;
@@ -30,20 +34,23 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView tvPlace, tvTemperature, tvDescription;
-    private LinearLayout llDetails;
-    private ImageView ivIcon;
+    protected TextView tvPlace, tvTemperature, tvDescription;
+    protected LinearLayout llDetails;
+    protected ImageView ivIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setViews();
 
-        tvPlace = (TextView) findViewById( R.id.tvPlace );
-        tvTemperature = (TextView) findViewById( R.id.tvTemperature );
-        tvDescription = (TextView) findViewById( R.id.tvDescription );
-        llDetails = (LinearLayout) findViewById( R.id.llDetails );
-        ivIcon = (ImageView) findViewById( R.id.ivIcon );
+        findViewById( R.id.fabFind ).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent( MainActivity.this, SearchActivity.class );
+                startActivity( i );
+            }
+        });
 
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE );
         LocationListener locationListener = new LocationListener() {
@@ -68,6 +75,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    protected void setViews()
+    {
+        tvPlace = (TextView) findViewById( R.id.tvPlace );
+        tvTemperature = (TextView) findViewById( R.id.tvTemperature );
+        tvDescription = (TextView) findViewById( R.id.tvDescription );
+        llDetails = (LinearLayout) findViewById( R.id.llDetails );
+        ivIcon = (ImageView) findViewById( R.id.ivIcon );
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -85,12 +100,25 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void getWeatherData( double lat, double lon )
+    public void getWeatherData( String place ) {
+        Call<WeatherData> call = RetrofitWeather.getClient().getCity( place );
+        weatherCallHandler( call );
+    }
+
+    public void getWeatherData( double lat, double lon )
     {
         Call<WeatherData> call = RetrofitWeather.getClient().getLocation( lat, lon );
+        weatherCallHandler( call );
+    }
+
+    protected void weatherCallHandler( Call call ){
         call.enqueue(new Callback<WeatherData>() {
             @Override
             public void onResponse(Call<WeatherData> call, Response<WeatherData> response) {
+                if( response.body() == null ){
+                    Toast.makeText(getApplicationContext(), "Could not find weather for this location", Toast.LENGTH_LONG).show();
+                    return;
+                }
                 setNewWeatherData( response.body() );
             }
 
@@ -101,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void setNewWeatherData( WeatherData data ){
+    public void setNewWeatherData( WeatherData data ){
         String place = data.getName() + ", " + data.getSys().getCountry();
         String temp = data.getMain().getTemp().toString() + " °C";
         String desc = data.getWeather().get(0).getDescription();
@@ -125,10 +153,10 @@ public class MainActivity extends AppCompatActivity {
                 .error( R.drawable.ic_launcher_background )
                 .into( ivIcon );
 
-        ((TextView)((LinearLayout)llDetails.getChildAt( 0 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getMain().getHumidity() ) + " %" );
-        ((TextView)((LinearLayout)llDetails.getChildAt( 1 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getMain().getTempMax() ) + " °C" );
-        ((TextView)((LinearLayout)llDetails.getChildAt( 2 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getMain().getTempMin() ) + " °C" );
-        ((TextView)((LinearLayout)llDetails.getChildAt( 3 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getMain().getPressure() ) + " hPa" );
-        ((TextView)((LinearLayout)llDetails.getChildAt( 4 )).getChildAt( 1 )).setText( ": " + String.valueOf( data.getWind().getSpeed() ) + " m/s" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 0 )).getChildAt( 1 )).setText( String.valueOf( data.getMain().getHumidity() ) + " %" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 1 )).getChildAt( 1 )).setText( String.valueOf( data.getMain().getTempMax() ) + " °C" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 2 )).getChildAt( 1 )).setText( String.valueOf( data.getMain().getTempMin() ) + " °C" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 3 )).getChildAt( 1 )).setText( String.valueOf( data.getMain().getPressure() ) + " hPa" );
+        ((TextView)((LinearLayout)llDetails.getChildAt( 4 )).getChildAt( 1 )).setText( String.valueOf( data.getWind().getSpeed() ) + " m/s" );
     }
 }

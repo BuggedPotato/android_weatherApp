@@ -9,6 +9,14 @@
     android:gravity="center_horizontal"
     >
 
+    <SearchView
+        android:id="@+id/svSearchBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:background="@drawable/search_bar"
+        />
+
     <TextView
         android:id="@+id/tvPlace"
         android:layout_width="match_parent"
@@ -150,14 +158,4 @@
 
     </LinearLayout>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabFind"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/plus"
-        android:layout_gravity="end|bottom"
-        android:contentDescription="Find other"
-        android:background="@color/purple_200"
-        android:layout_margin="18dp"
-        />
 </androidx.appcompat.widget.LinearLayoutCompat>
